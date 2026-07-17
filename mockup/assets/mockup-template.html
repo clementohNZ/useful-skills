@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!--
+  STARTER SCAFFOLD for a single-file mockup.
+  ALL concepts render stacked on one scrollable page; the left rail is anchor
+  navigation (click to scroll to a concept, with scrollspy highlighting).
+  Adapt it: restyle to match the target product's theme, replace the CONCEPTS
+  array with 10+ genuinely distinct render() functions, and use the user's real
+  data. Keep everything inline and self-contained.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MOCKUP TITLE · Concepts</title>
+<style>
+  :root { --bg:#f7f7f5; --panel:#fff; --line:#e2e2df; --fg:#111; --dim:#6b6b6b; --accent:#111; --pick:#b8fa30; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--fg); font-family:ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .app { display:grid; grid-template-columns:250px 1fr; align-items:start; }
+  .rail { position:sticky; top:0; height:100vh; overflow:auto; border-right:1px solid var(--line); background:var(--panel); padding:22px 0; }
+  .rail h1 { font-size:14px; font-weight:800; padding:0 20px 4px; }
+  .rail .sub { font-size:11px; color:var(--dim); padding:0 20px 16px; line-height:1.45; }
+  .navbtn { display:flex; gap:10px; width:100%; text-align:left; text-decoration:none; color:var(--fg); padding:9px 20px; font:600 13px ui-sans-serif; cursor:pointer; border-left:3px solid transparent; }
+  .navbtn .n { font:600 11px ui-monospace,monospace; color:#aaa; }
+  .navbtn:hover { background:#f0f0ee; }
+  .navbtn.active { background:#f0f0ee; border-left-color:var(--accent); }
+  .navbtn.chosen::after { content:"✓"; margin-left:auto; color:#1ea64a; font-weight:800; }
+  .main { padding:28px 40px 60vh; max-width:1080px; }
+  .concept { scroll-margin-top:20px; padding:22px 0 32px; border-bottom:1px solid var(--line); }
+  .chead { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:20px; }
+  .chead .k { font:11px ui-monospace,monospace; color:var(--dim); letter-spacing:.1em; margin-bottom:6px; }
+  .chead .t { font-size:22px; font-weight:900; letter-spacing:-.02em; line-height:1; }
+  .chead .blurb { font-size:12.5px; color:var(--dim); max-width:620px; margin-top:8px; line-height:1.5; }
+  .choose { border:1px solid var(--accent); background:var(--panel); color:var(--fg); font:700 11px ui-monospace,monospace; text-transform:uppercase; letter-spacing:.1em; padding:9px 14px; cursor:pointer; white-space:nowrap; }
+  .choose:hover { background:var(--accent); color:#fff; }
+  .choose.is-chosen { background:var(--pick); border-color:var(--accent); color:#111; }
+  .banner { position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(160%); background:var(--accent); color:#fff; padding:12px 20px; font:12px ui-monospace,monospace; border:1px solid var(--pick); transition:transform .25s; z-index:20; }
+  .banner.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <h1>MOCKUP TITLE</h1>
+    <p class="sub">Ten+ concepts, all on this page — scroll, or jump with the list. “Choose this concept” to mark a pick.</p>
+    <div id="nav"></div>
+  </nav>
+  <main class="main" id="stage"></main>
+</div>
+<div class="banner" id="banner"></div>
+
+<script>
+  // Replace with the user's real data.
+  const DATA = {};
+
+  // 10+ genuinely distinct concepts. Each render() returns an HTML string.
+  const CONCEPTS = [
+    { name: "Concept one", blurb: "One line on why this direction.", render: () => `<div>Replace me — concept 1</div>` },
+    { name: "Concept two", blurb: "A different structural idea.", render: () => `<div>Replace me — concept 2</div>` },
+    // ...add at least ten total, each genuinely different...
+  ];
+
+  const nav = document.getElementById("nav");
+  const stage = document.getElementById("stage");
+  const banner = document.getElementById("banner");
+  let chosen = -1;
+
+  CONCEPTS.forEach((c, i) => {
+    const id = "concept-" + (i + 1);
+    const num = String(i + 1).padStart(2, "0");
+
+    const a = document.createElement("a");
+    a.className = "navbtn";
+    a.href = "#" + id;
+    a.dataset.i = i;
+    a.innerHTML = `<span class="n">${num}</span> ${c.name}`;
+    nav.appendChild(a);
+
+    const sec = document.createElement("section");
+    sec.className = "concept";
+    sec.id = id;
+    sec.innerHTML =
+      `<div class="chead"><div>` +
+      `<div class="k">CONCEPT ${num}</div>` +
+      `<div class="t">${c.name}</div>` +
+      `<div class="blurb">${c.blurb}</div>` +
+      `</div><button class="choose" data-i="${i}">Choose this concept</button></div>` +
+      `<div class="canvas">${c.render()}</div>`;
+    stage.appendChild(sec);
+  });
+
+  // Scrollspy: highlight the rail item for the concept currently in view.
+  const navItems = [...nav.querySelectorAll(".navbtn")];
+  const sections = [...stage.querySelectorAll(".concept")];
+  const spy = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const i = sections.indexOf(e.target);
+        navItems.forEach((n, j) => n.classList.toggle("active", j === i));
+      }
+    },
+    { rootMargin: "-40% 0px -55% 0px", threshold: 0 },
+  );
+  sections.forEach((s) => spy.observe(s));
+  if (navItems[0]) navItems[0].classList.add("active");
+
+  // Choose: one pick at a time, marked on the section button + rail + a banner.
+  stage.addEventListener("click", (e) => {
+    const btn = e.target.closest(".choose");
+    if (!btn) return;
+    chosen = Number(btn.dataset.i);
+    stage.querySelectorAll(".choose").forEach((b) => {
+      const on = Number(b.dataset.i) === chosen;
+      b.classList.toggle("is-chosen", on);
+      b.textContent = on ? "✓ Chosen" : "Choose this concept";
+    });
+    navItems.forEach((n, j) => n.classList.toggle("chosen", j === chosen));
+    banner.textContent = "✓ Selected: Concept " + String(chosen + 1).padStart(2, "0") + " · " + CONCEPTS[chosen].name;
+    banner.classList.add("show");
+    clearTimeout(window._bt);
+    window._bt = setTimeout(() => banner.classList.remove("show"), 3200);
+  });
+</script>
+</body>
+</html>

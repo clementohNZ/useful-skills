@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mockups Index</title>
+<style>
+  :root {
+    --bg: #0e0f12; --panel: #16181d; --line: #262a31;
+    --fg: #e9ecf1; --dim: #9aa3af; --accent: #b8fa30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  }
+  header { border-bottom: 1px solid var(--line); padding: 14px 18px; flex: none; }
+  .top { display: flex; align-items: center; gap: 14px; }
+  h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+  .count { color: var(--accent); font-weight: 700; }
+  .spacer { flex: 1; }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  input[type="search"], select {
+    background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+    font: inherit; font-size: 13px; padding: 7px 10px; outline: none;
+  }
+  input[type="search"] { min-width: 240px; flex: 1; }
+  input[type="search"]:focus, select:focus { border-color: var(--accent); }
+  .seg { display: inline-flex; border: 1px solid var(--line); flex: none; }
+  .seg button {
+    background: transparent; border: 0; color: var(--dim);
+    font: inherit; font-size: 12px; font-weight: 600; padding: 7px 12px; cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); color: #0e0f12; }
+  .seg button + button { border-left: 1px solid var(--line); }
+
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px 1fr; }
+  .layout[data-mode="tab"] { grid-template-columns: 1fr; }
+  .layout[data-mode="tab"] .preview { display: none; }
+
+  .list { overflow: auto; border-right: 1px solid var(--line); padding: 14px; }
+  .layout[data-mode="tab"] .list { border-right: 0; max-width: 1000px; margin: 0 auto; width: 100%; }
+  .group { margin-bottom: 18px; }
+  .group h2 {
+    font-family: ui-monospace, "JetBrains Mono", monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 8px;
+  }
+  a.card {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 10px 12px; margin-bottom: 6px; text-decoration: none; color: inherit; cursor: pointer;
+    transition: border-color .12s;
+  }
+  a.card:hover { border-color: var(--accent); }
+  a.card.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+  .num { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--accent); min-width: 56px; }
+  .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { color: var(--dim); font-size: 11px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-family: ui-monospace, monospace; font-size: 10px; color: var(--dim); border: 1px solid var(--line); padding: 2px 7px; white-space: nowrap; }
+  .empty { color: var(--dim); font-size: 14px; padding: 30px; text-align: center; border: 1px dashed var(--line); }
+  mark { background: var(--accent); color: #0e0f12; }
+
+  .preview { min-width: 0; display: flex; flex-direction: column; background: #fff; }
+  .preview-bar { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .preview-bar .pt { font-size: 13px; font-weight: 600; min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .preview-bar a { color: var(--accent); font-size: 12px; text-decoration: none; border: 1px solid var(--line); padding: 5px 9px; white-space: nowrap; }
+  .preview-bar a:hover { border-color: var(--accent); }
+  .preview-bar a[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+  iframe { flex: 1; border: 0; width: 100%; background: #fff; }
+
+  @media (max-width: 760px) {
+    .layout, .layout[data-mode="panel"] { grid-template-columns: 1fr; }
+    .layout .preview { display: none; }
+  }
+  code { font-family: ui-monospace, monospace; color: var(--fg); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="top">
+      <h1>Mockups <span class="count" id="total"></span></h1>
+      <span class="spacer"></span>
+      <div class="seg" id="mode" role="tablist" aria-label="Open mode">
+        <button type="button" data-mode="panel">Side panel</button>
+        <button type="button" data-mode="tab">New tab</button>
+      </div>
+    </div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search title, category, or prompt…" aria-label="Search mockups" />
+      <select id="cat" aria-label="Filter by category"><option value="">All categories</option></select>
+    </div>
+  </header>
+
+  <div class="layout" id="layout" data-mode="panel">
+    <aside class="list" id="list"></aside>
+    <main class="preview">
+      <div class="preview-bar">
+        <span class="pt" id="ptitle">Select a mockup to preview</span>
+        <a id="openext" href="#" target="_blank" rel="noopener" aria-disabled="true">Open in new tab ↗</a>
+      </div>
+      <iframe id="frame" title="Mockup preview"></iframe>
+    </main>
+  </div>
+
+  <script src="./manifest.js"></script>
+  <script>
+    (function () {
+      const all = (window.MOCKUPS || []).slice().sort((a, b) => b.n - a.n);
+      const listEl = document.getElementById("list");
+      const totalEl = document.getElementById("total");
+      const qEl = document.getElementById("q");
+      const catEl = document.getElementById("cat");
+      const layout = document.getElementById("layout");
+      const modeSeg = document.getElementById("mode");
+      const frame = document.getElementById("frame");
+      const ptitle = document.getElementById("ptitle");
+      const openext = document.getElementById("openext");
+
+      totalEl.textContent = all.length ? "· " + all.length : "";
+
+      const groups = [...new Set(all.map((m) => m.group || "ungrouped"))].sort();
+      for (const g of groups) {
+        const o = document.createElement("option");
+        o.value = g;
+        o.textContent = g.replace(/-/g, " ");
+        catEl.appendChild(o);
+      }
+
+      let mode = localStorage.getItem("mockups.mode") || "panel";
+      let activePath = null;
+
+      function setMode(m) {
+        mode = m;
+        layout.setAttribute("data-mode", m);
+        localStorage.setItem("mockups.mode", m);
+        [...modeSeg.children].forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
+      }
+      modeSeg.addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (b) setMode(b.dataset.mode);
+      });
+
+      function preview(m) {
+        activePath = m.path;
+        frame.src = m.path;
+        ptitle.textContent = m.title || m.path;
+        openext.href = m.path;
+        openext.setAttribute("aria-disabled", "false");
+        [...listEl.querySelectorAll("a.card")].forEach((a) => a.classList.toggle("active", a.dataset.path === m.path));
+      }
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      }
+      function highlight(text, q) {
+        const s = esc(text);
+        if (!q) return s;
+        const i = text.toLowerCase().indexOf(q);
+        if (i < 0) return s;
+        return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+      }
+
+      function render() {
+        const q = qEl.value.trim().toLowerCase();
+        const cat = catEl.value;
+        const filtered = all.filter((m) => {
+          if (cat && (m.group || "ungrouped") !== cat) return false;
+          if (!q) return true;
+          return (
+            (m.title || "").toLowerCase().includes(q) ||
+            (m.group || "").toLowerCase().includes(q) ||
+            (m.prompt || "").toLowerCase().includes(q)
+          );
+        });
+
+        listEl.innerHTML = "";
+        if (!all.length) {
+          listEl.innerHTML = '<div class="empty">No mockups yet. Run <code>/mockups</code> and describe what you want to explore.</div>';
+          return;
+        }
+        if (!filtered.length) {
+          listEl.innerHTML = '<div class="empty">No mockups match your search.</div>';
+          return;
+        }
+
+        const byGroup = new Map();
+        for (const m of filtered) {
+          const k = m.group || "ungrouped";
+          if (!byGroup.has(k)) byGroup.set(k, []);
+          byGroup.get(k).push(m);
+        }
+
+        for (const [g, items] of byGroup) {
+          const sec = document.createElement("section");
+          sec.className = "group";
+          const h = document.createElement("h2");
+          h.textContent = g.replace(/-/g, " ");
+          sec.appendChild(h);
+          for (const m of items) {
+            const a = document.createElement("a");
+            a.className = "card";
+            a.href = m.path;
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.dataset.path = m.path;
+            if (m.path === activePath) a.classList.add("active");
+            const date = m.createdAt || "";
+            const c = m.concepts ? m.concepts + " concepts" : "";
+            a.innerHTML =
+              '<span class="num">' + (m.id || m.n) + "</span>" +
+              '<span class="meta"><span class="title">' + highlight(m.title || m.path, q) + "</span>" +
+              (m.prompt ? '<span class="sub">' + esc(m.prompt) + "</span>" : "") +
+              "</span>" +
+              '<span class="badge">' + [c, date].filter(Boolean).join(" · ") + "</span>";
+            a.addEventListener("click", (e) => {
+              const previewVisible = mode === "panel" && frame.offsetParent !== null;
+              if (previewVisible) {
+                e.preventDefault();
+                preview(m);
+              }
+            });
+            sec.appendChild(a);
+          }
+          listEl.appendChild(sec);
+        }
+      }
+
+      qEl.addEventListener("input", render);
+      catEl.addEventListener("change", render);
+      setMode(mode);
+      render();
+
+      // Auto-preview the newest mockup so the panel isn't blank on load.
+      if (mode === "panel" && all.length && frame.offsetParent !== null) preview(all[0]);
+    })();
+  </script>
+</body>
+</html>
