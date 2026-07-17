@@ -38,25 +38,34 @@
   .seg button.on { background: var(--accent); color: #0e0f12; }
   .seg button + button { border-left: 1px solid var(--line); }
 
-  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--list-w) 6px 1fr; }
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--list-w) 8px 1fr; }
   .layout[data-mode="tab"], .layout[data-empty="true"] { grid-template-columns: 1fr; }
   .layout[data-mode="tab"] .preview, .layout[data-mode="tab"] .resizer,
   .layout[data-empty="true"] .preview, .layout[data-empty="true"] .resizer { display: none; }
+  .layout.resizing { user-select: none; }
+  .layout.resizing iframe { pointer-events: none; }
 
   .list { overflow: auto; padding: 14px; }
   .layout[data-mode="tab"] .list { max-width: 1000px; margin: 0 auto; width: 100%; }
 
   /* Drag handle between list and preview. */
-  .resizer { position: relative; cursor: col-resize; }
-  .resizer::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 1px; background: var(--line); }
-  .resizer:hover::before, .resizer.dragging::before { width: 3px; background: var(--accent); }
+  .resizer { position: relative; cursor: col-resize; touch-action: none; }
+  .resizer::before { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: var(--line); }
+  .resizer:hover::before, .resizer.dragging::before { background: var(--accent); }
 
-  .group { margin-bottom: 18px; }
-  .group h2 {
-    font-family: ui-monospace, "JetBrains Mono", monospace;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--dim); margin-bottom: 8px;
+  .group { margin-bottom: 14px; }
+  .group-h {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    background: transparent; border: 0; cursor: pointer; padding: 4px 0 8px; color: var(--dim);
+    font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
   }
+  .group-h:hover { color: var(--fg); }
+  .group-h .chev { font-size: 9px; transition: transform .12s; }
+  .group.collapsed .group-h .chev { transform: rotate(-90deg); }
+  .group-h .gcount { margin-left: auto; color: var(--dim); font-weight: 600; }
+  .group.collapsed .group-items { display: none; }
+
   a.card {
     display: flex; align-items: center; gap: 12px;
     border: 1px solid var(--line); background: var(--panel);
@@ -145,6 +154,18 @@
 
       const MIN_W = 260, MAX_W = 620;
 
+      // ---- Preference storage: cookie first, with a localStorage fallback so it
+      // still persists on file:// (where browsers drop cookies). ----
+      function setPref(key, val) {
+        try { document.cookie = key + "=" + encodeURIComponent(val) + "; path=/; max-age=31536000; SameSite=Lax"; } catch (e) {}
+        try { localStorage.setItem(key, val); } catch (e) {}
+      }
+      function getPref(key) {
+        const m = document.cookie.match(new RegExp("(?:^|; )" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]*)"));
+        if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      }
+
       totalEl.textContent = all.length ? "· " + all.length : "";
 
       const groups = [...new Set(all.map((m) => m.group || "ungrouped"))].sort();
@@ -155,13 +176,14 @@
         catEl.appendChild(o);
       }
 
-      let mode = localStorage.getItem("mockups.mode") || "panel";
+      let mode = getPref("mockups_mode") || "panel";
       let activePath = null;
+      const collapsed = new Set((getPref("mockups_collapsed") || "").split(",").filter(Boolean));
 
       function setMode(m) {
         mode = m;
         layout.setAttribute("data-mode", m);
-        localStorage.setItem("mockups.mode", m);
+        setPref("mockups_mode", m);
         [...modeSeg.children].forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
       }
       modeSeg.addEventListener("click", (e) => {
@@ -242,9 +264,18 @@
         for (const [g, items] of byGroup) {
           const sec = document.createElement("section");
           sec.className = "group";
-          const h = document.createElement("h2");
-          h.textContent = g.replace(/-/g, " ");
+          sec.dataset.group = g;
+          // While searching, force-expand so matches are never hidden in a collapsed group.
+          if (!q && collapsed.has(g)) sec.classList.add("collapsed");
+
+          const h = document.createElement("button");
+          h.type = "button";
+          h.className = "group-h";
+          h.innerHTML = '<span class="chev">▾</span><span>' + esc(g.replace(/-/g, " ")) + '</span><span class="gcount">' + items.length + "</span>";
           sec.appendChild(h);
+
+          const box = document.createElement("div");
+          box.className = "group-items";
           for (const m of items) {
             const a = document.createElement("a");
             a.className = "card";
@@ -268,16 +299,29 @@
                 preview(m);
               }
             });
-            sec.appendChild(a);
+            box.appendChild(a);
           }
+          sec.appendChild(box);
           listEl.appendChild(sec);
         }
       }
 
-      // Auto-fit the sidebar to the widest row so nothing truncates by default.
+      // Collapse / expand a category (persisted).
+      listEl.addEventListener("click", (e) => {
+        const h = e.target.closest(".group-h");
+        if (!h) return;
+        const sec = h.closest(".group");
+        const g = sec.dataset.group;
+        const nowCollapsed = sec.classList.toggle("collapsed");
+        if (nowCollapsed) collapsed.add(g);
+        else collapsed.delete(g);
+        setPref("mockups_collapsed", [...collapsed].join(","));
+      });
+
+      // Auto-fit the sidebar to the widest row so titles never truncate by default.
       // Respects a width the user has dragged to (persisted).
       function fitSidebar() {
-        const stored = localStorage.getItem("mockups.listW");
+        const stored = getPref("mockups_listw");
         if (stored) {
           layout.style.setProperty("--list-w", stored);
           return;
@@ -291,39 +335,42 @@
           const sub = card.querySelector(".sub");
           const badge = card.querySelector(".badge");
           const metaText = Math.max(title ? title.scrollWidth : 0, sub ? sub.scrollWidth : 0);
-          // num + gap + meta + gap + badge + card padding + card border
           const need = (num ? num.offsetWidth : 56) + 12 + metaText + 12 + (badge ? badge.offsetWidth : 0) + 24 + 2;
           if (need > max) max = need;
         }
-        // + list padding (14*2) and a small buffer
         const w = Math.max(320, Math.min(Math.ceil(max) + 32, MAX_W));
         layout.style.setProperty("--list-w", w + "px");
       }
 
-      // Drag-to-resize the sidebar.
+      // Drag-to-resize via Pointer Events + pointer capture, so the drag keeps
+      // tracking even when the cursor moves over the preview iframe (the old
+      // mouse-event version stalled there — you could shrink but not grow).
       let dragging = false;
-      resizer.addEventListener("mousedown", (e) => {
+      resizer.addEventListener("pointerdown", (e) => {
         dragging = true;
+        try { resizer.setPointerCapture(e.pointerId); } catch (err) {}
         resizer.classList.add("dragging");
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
+        layout.classList.add("resizing");
         e.preventDefault();
       });
-      window.addEventListener("mousemove", (e) => {
+      resizer.addEventListener("pointermove", (e) => {
         if (!dragging) return;
         const rect = layout.getBoundingClientRect();
         let w = e.clientX - rect.left;
         w = Math.max(MIN_W, Math.min(w, rect.width - 380));
         layout.style.setProperty("--list-w", w + "px");
       });
-      window.addEventListener("mouseup", () => {
+      function endDrag(e) {
         if (!dragging) return;
         dragging = false;
+        try { resizer.releasePointerCapture(e.pointerId); } catch (err) {}
         resizer.classList.remove("dragging");
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-        localStorage.setItem("mockups.listW", layout.style.getPropertyValue("--list-w").trim());
-      });
+        layout.classList.remove("resizing");
+        setPref("mockups_listw", layout.style.getPropertyValue("--list-w").trim());
+      }
+      resizer.addEventListener("pointerup", endDrag);
+      resizer.addEventListener("pointercancel", endDrag);
+      resizer.addEventListener("lostpointercapture", endDrag);
 
       qEl.addEventListener("input", render);
       catEl.addEventListener("change", render);
