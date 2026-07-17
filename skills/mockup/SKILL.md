@@ -31,7 +31,9 @@ Ask about:
 - **What & where** — the exact component / page / idea, and where it lives (so you can read its source + design system).
 - **Goal & audience** — the primary job this UI does and who uses it.
 - **Must-haves / constraints / avoid** — data to show, key actions, states (empty / loading / error), anything off-limits.
-- **Reference / vibe** — the product's own theme is the default; any inspiration to lean into.
+- **Motion** — include animations, transitions, and micro-interactions, or keep everything static? *(remembered in the config)*
+- **Reference mode** — how much to ground the styling: `design-md` (design markdown only) · `design-md+repo` (markdown **plus** the real front-end code / design system) · `none` (no reference — free-form). Default `design-md+repo`. *(remembered in the config)*
+- **Inspiration / vibe** — any references or direction to lean into (separate from the reference mode above).
 - **How many concepts** — default 10.
 - **Creativity level (1-10, default 5)** — how far to push. Show it as a terminal-friendly gauge:
 
@@ -49,11 +51,42 @@ Fill N of 10 cells for the level on the table and restate it when the user picks
 
 Whatever the level, every concept stays genuinely distinct and production-quality.
 
+## Preferences (`mock-ups/config.yaml`)
+
+Persist the user's standing choices in **`mock-ups/config.yaml`** so you don't re-ask every time and they can tweak them over time.
+
+- **First run** (no config yet): ask **motion?** and **reference mode?** as part of the scope round, then create `mock-ups/config.yaml` with the answers (write sensible defaults if the user skips).
+- **Later runs**: read the config and apply it silently. Briefly surface the current settings so the user can change them; if they do, **update the file**.
+
+Shape:
+
+```yaml
+# mock-ups/config.yaml — preferences for the `mockup` skill.
+# Read on every run; updated whenever you change your mind.
+
+# Include motion — animations, transitions, micro-interactions?
+motion: true
+
+# How much to reference when styling concepts:
+#   design-md       → the project's design/theme markdown only
+#   design-md+repo  → design markdown PLUS the real front-end code / design system
+#   none            → no reference; free-form / generic design
+reference: design-md+repo
+
+# Optional standing defaults (still overridable per run):
+default_creativity: 5   # 1-10
+```
+
+**What the settings do:**
+
+- `motion: true` → include tasteful motion (transitions, hover/enter micro-interactions, subtle animation); `false` → everything static, no animation.
+- `reference` gates how far you apply rules 4–5: `design-md` reads only the design markdown; `design-md+repo` does the full grounding (markdown + front-end code); `none` skips grounding entirely (design freely — the on-system / off-system split from rule 5 doesn't apply).
+
 ## Steps
 
-1. **Scope it out first (unless told to skip).** Run the short clarifying round above — including the creativity level (1-10, default 5) shown as the terminal gauge. Stop the instant the user says go / skip / answers nothing, and proceed with defaults. A few questions, then build — never a form.
-2. **Study the real design system (rule 4).** Read the target's own source, then the project's design/theme markdown **and its actual front-end code** — the UI/design-system package, shared primitives, and theme/token files (CSS variables, Tailwind/theme config) — so you're pulling real tokens and components, not guessing. Use the user's real data/content — never lorem ipsum.
-3. **Design the concepts** (10 by default, or the requested number) **at the chosen creativity level**, following `frontend-design`'s quality bar. Keep the **majority on-system** (representative of their styling) and include a few **clearly-marked off-system breakouts** so they can see what's possible beyond the current system (rule 5). Each concept is a genuinely different direction, not a variation.
+1. **Scope it out first (unless told to skip).** Run the short clarifying round above — the creativity gauge, plus (on first run) the persisted **motion** and **reference-mode** questions. Read `mock-ups/config.yaml` if it exists and apply it silently (surface the current settings so they can tweak); if it's missing or the user changes a preference, write/update it. Stop the instant the user says go / skip / answers nothing, and proceed with defaults. A few questions, then build — never a form.
+2. **Study the design system — per the `reference` preference (rules 4–5).** For `design-md`, read the design/theme markdown only; for `design-md+repo`, also read the actual front-end code (UI/design-system package, shared primitives, theme/token/Tailwind config) so you pull real tokens and components; for `none`, skip grounding and design freely. Use the user's real data/content — never lorem ipsum.
+3. **Design the concepts** (10 by default, or the requested number) **at the chosen creativity level, honoring the `motion` preference** (tasteful animation when on; fully static when off). Keep the majority on-system and include a few clearly-marked off-system breakouts (rule 5; skipped when `reference: none`). Each concept is a genuinely different direction, not a variation.
 4. **Compute the next 6-digit number** (see above) and pick the concept subfolder.
 5. **Write the single HTML file** at `mock-ups/<group>/NNNNNN-<slug>.html` using the stacked-page structure below. `assets/mockup-template.html` in this skill is a starting scaffold — adapt it, don't ship it verbatim.
 6. **Ensure the index exists.** If `mock-ups/mockups.html` or `mock-ups/manifest.js` is missing, create them by copying this skill's `assets/mockups.html` and `assets/manifest.js`.
@@ -101,7 +134,7 @@ window.MOCKUPS.push({
 ## Definition of done
 
 - [ ] The requested number of genuinely distinct concepts (**10 by default**) in **one** self-contained HTML file, stacked on one scrollable page.
-- [ ] Honors the project's design MD / tokens (`DESIGN.md` etc.) — reads like this product, not a generic template.
+- [ ] Honors `mock-ups/config.yaml` — the `reference` grounding mode and the `motion` on/off preference (config created/updated as needed) — and reads like this product, not a generic template.
 - [ ] Saved at `mock-ups/<group>/NNNNNN-<slug>.html` with a **global 6-digit** prefix.
 - [ ] `mock-ups/manifest.js` appended; `mock-ups/mockups.html` present.
 - [ ] Rendered and verified in a browser.
