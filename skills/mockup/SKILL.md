@@ -1,6 +1,6 @@
 ---
 name: mockup
-description: Create HTML mockups for ideas, features, or component redesigns. Use whenever the user asks for a "mockup", "mock-up", "mock up", "design concepts", "show me options/ideas", wants to explore or redesign a UI before building, or invokes /mockup (or /mockups). Produce distinct concepts in a SINGLE self-contained HTML file — 10 by default, or the exact number the user asks for (e.g. "20 concepts", "give me 30") — save it under the root mock-ups/ folder in a concept subfolder with a zero-padded 6-digit generation-order prefix, append to the mock-ups/manifest.js registry, and return the full absolute path to the file and to mock-ups/mockups.html.
+description: Create HTML mockups for ideas, features, or component redesigns. Use whenever the user asks for a "mockup", "mock-up", "mock up", "design concepts", "show me options/ideas", wants to explore or redesign a UI before building, or invokes /mockup (or /mockups). First briefly scope the request with a few clarifying questions — including a 1-10 creativity level (default 5) shown as a terminal gauge — which the user can skip at any time. Then produce distinct concepts in a SINGLE self-contained HTML file — 10 by default, or the exact number the user asks for — save it under the root mock-ups/ folder in a concept subfolder with a zero-padded 6-digit generation-order prefix, append to the mock-ups/manifest.js registry, and return the full absolute path to the file and to mock-ups/mockups.html.
 ---
 
 # Mockups
@@ -21,16 +21,44 @@ Turn an idea or a "redesign this component" request into a set of visual concept
 - **Filename:** `NNNNNN-<slug>.html` where `NNNNNN` is a **global, zero-padded, 6-digit** number in generation order — `000001`, `000002`, `000003`, … The prefix is global across the whole `mock-ups/` tree (not per-subfolder) so files always sort in the exact order they were created, with no numeric-sorting surprises.
   - **Next number = (highest `NNNNNN` found anywhere under `mock-ups/**` and in `manifest.js`) + 1.** If nothing exists yet, start at `000001`.
 
+## Scope it out first (ask — but never block)
+
+Before generating, run **one short round of clarifying questions** so the concepts actually fit what the user wants. Keep it tight — a few questions asked together — then build. **The user can stop at any time**: "just generate", "go", "skip", or answering nothing means you proceed immediately with sensible defaults. Never interrogate; this is a quick scope, not a form.
+
+Ask about:
+
+- **What & where** — the exact component / page / idea, and where it lives (so you can read its source + design system).
+- **Goal & audience** — the primary job this UI does and who uses it.
+- **Must-haves / constraints / avoid** — data to show, key actions, states (empty / loading / error), anything off-limits.
+- **Reference / vibe** — the product's own theme is the default; any inspiration to lean into.
+- **How many concepts** — default 10.
+- **Creativity level (1-10, default 5)** — how far to push. Show it as a terminal-friendly gauge:
+
+```
+Creativity  [█████·····] 5/10   ·   grounded  ←→  experimental
+```
+
+Fill N of 10 cells for the level on the table and restate it when the user picks — e.g. `[███·······] 3/10`, `[████████··] 8/10`.
+
+**How the creativity level maps to the concepts:**
+
+- **1-3 · grounded** — conventional, safe, close to existing patterns and the current product; refinement over reinvention.
+- **4-6 · balanced** (default 5) — mostly practical, with two or three bolder swings.
+- **7-10 · experimental** — push layout, structure, and aesthetics hard; unexpected idioms and standout visuals — still usable, still on-brand.
+
+Whatever the level, every concept stays genuinely distinct and production-quality.
+
 ## Steps
 
-1. **Understand the ask and the design system.** If redesigning an existing component/page, read its source. Then apply hard rule 4: find and read any design/theme markdown (`DESIGN.md`, etc.) and the project's token/theme files, and make every concept honor those tokens. Use the user's real data/content — never lorem ipsum.
-2. **Design the concepts** (10 by default, or the requested number). Follow the `frontend-design` skill's quality bar (bold, non-generic, production-grade) *within* the project's design system. Each concept should feel like a different answer to the question, not a variation.
-3. **Compute the next 6-digit number** (see above) and pick the concept subfolder.
-4. **Write the single HTML file** at `mock-ups/<group>/NNNNNN-<slug>.html` using the stacked-page structure below. `assets/mockup-template.html` in this skill is a starting scaffold — adapt it, don't ship it verbatim.
-5. **Ensure the index exists.** If `mock-ups/mockups.html` or `mock-ups/manifest.js` is missing, create them by copying this skill's `assets/mockups.html` and `assets/manifest.js`.
-6. **Append exactly one entry to `mock-ups/manifest.js`** (the index reads this — you do NOT hand-edit `mockups.html`).
-7. **Verify it renders** — open the new file in a browser, confirm every concept shows stacked and the anchor-nav rail scrolls to each; fix anything broken.
-8. **Report the full absolute paths** to the new mockup file and to `mock-ups/mockups.html`.
+1. **Scope it out first (unless told to skip).** Run the short clarifying round above — including the creativity level (1-10, default 5) shown as the terminal gauge. Stop the instant the user says go / skip / answers nothing, and proceed with defaults. A few questions, then build — never a form.
+2. **Understand the ask and the design system.** If redesigning an existing component/page, read its source. Then apply hard rule 4: find and read any design/theme markdown (`DESIGN.md`, etc.) and the project's token/theme files, and make every concept honor those tokens. Use the user's real data/content — never lorem ipsum.
+3. **Design the concepts** (10 by default, or the requested number) **at the chosen creativity level**. Follow the `frontend-design` skill's quality bar (bold, non-generic, production-grade) *within* the project's design system. Each concept should feel like a different answer to the question, not a variation.
+4. **Compute the next 6-digit number** (see above) and pick the concept subfolder.
+5. **Write the single HTML file** at `mock-ups/<group>/NNNNNN-<slug>.html` using the stacked-page structure below. `assets/mockup-template.html` in this skill is a starting scaffold — adapt it, don't ship it verbatim.
+6. **Ensure the index exists.** If `mock-ups/mockups.html` or `mock-ups/manifest.js` is missing, create them by copying this skill's `assets/mockups.html` and `assets/manifest.js`.
+7. **Append exactly one entry to `mock-ups/manifest.js`** (the index reads this — you do NOT hand-edit `mockups.html`).
+8. **Verify it renders** — open the new file in a browser, confirm every concept shows stacked and the anchor-nav rail scrolls to each; fix anything broken.
+9. **Report the full absolute paths** to the new mockup file and to `mock-ups/mockups.html`.
 
 ## The HTML file structure (all concepts on one scrollable page)
 
