@@ -23,12 +23,15 @@
   h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
   .count { color: var(--accent); font-weight: 700; }
   .spacer { flex: 1; }
-  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .sidebar-tools { flex: none; display: grid; gap: 9px; padding: 14px; border-bottom: 1px solid var(--line); }
+  .controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .tool-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tool-label { color: var(--dim); font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
   input[type="search"], select {
     background: var(--panel); border: 1px solid var(--line); color: var(--fg);
-    font: inherit; font-size: 13px; padding: 7px 10px; outline: none;
+    font: inherit; font-size: 13px; padding: 7px 10px; outline: none; min-width: 0;
   }
-  input[type="search"] { min-width: 240px; flex: 1; }
+  input[type="search"] { width: 100%; }
   input[type="search"]:focus, select:focus { border-color: var(--accent); }
   .seg { display: inline-flex; border: 1px solid var(--line); flex: none; }
   .seg button {
@@ -45,26 +48,30 @@
   .layout.resizing { user-select: none; }
   .layout.resizing iframe { pointer-events: none; }
 
-  .list { overflow: auto; padding: 14px; }
-  .layout[data-mode="tab"] .list { max-width: 1000px; margin: 0 auto; width: 100%; }
+  .sidebar { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+  .list { min-height: 0; overflow: auto; padding: 14px; }
+  .layout[data-mode="tab"] .sidebar { max-width: 1000px; margin: 0 auto; width: 100%; border-right: 0; }
 
   /* Drag handle between list and preview. */
   .resizer { position: relative; cursor: col-resize; touch-action: none; }
   .resizer::before { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: var(--line); }
   .resizer:hover::before, .resizer.dragging::before { background: var(--accent); }
 
-  .group { margin-bottom: 14px; }
-  .group-h {
+  .group, .day { margin-bottom: 16px; }
+  .group-h, .day-h {
     display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-    background: transparent; border: 0; cursor: pointer; padding: 4px 0 8px; color: var(--dim);
+    background: transparent; border: 0; padding: 4px 0 8px; color: var(--dim);
     font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase;
   }
+  .group-h { cursor: pointer; }
   .group-h:hover { color: var(--fg); }
   .group-h .chev { font-size: 9px; transition: transform .12s; }
   .group.collapsed .group-h .chev { transform: rotate(-90deg); }
-  .group-h .gcount { margin-left: auto; color: var(--dim); font-weight: 600; }
+  .group-h .gcount, .day-h .gcount { margin-left: auto; color: var(--dim); font-weight: 600; }
   .group.collapsed .group-items { display: none; }
+  .day-h::after { content: ""; height: 1px; flex: 1; margin-left: 4px; background: var(--line); }
+  .day-h .gcount { order: 2; margin-left: 0; }
 
   a.card {
     display: flex; align-items: center; gap: 12px;
@@ -113,20 +120,33 @@
   <header>
     <div class="top">
       <h1>Mockups <span class="count" id="total"></span></h1>
-      <span class="spacer"></span>
-      <div class="seg" id="mode" role="tablist" aria-label="Open mode">
-        <button type="button" data-mode="panel">Side panel</button>
-        <button type="button" data-mode="tab">New tab</button>
-      </div>
-    </div>
-    <div class="controls">
-      <input type="search" id="q" placeholder="Search title, category, or prompt…" aria-label="Search mockups" />
-      <select id="cat" aria-label="Filter by category"><option value="">All categories</option></select>
     </div>
   </header>
 
-  <div class="layout" id="layout" data-mode="panel">
-    <aside class="list" id="list"></aside>
+  <div class="layout" id="layout" data-mode="panel" data-view="recent">
+    <aside class="sidebar">
+      <div class="sidebar-tools">
+        <div class="controls">
+          <input type="search" id="q" placeholder="Search title, category, or prompt…" aria-label="Search mockups" />
+          <select id="cat" aria-label="Filter by category"><option value="">All categories</option></select>
+        </div>
+        <div class="tool-row">
+          <span class="tool-label">Arrange</span>
+          <div class="seg" id="view" role="group" aria-label="Arrange mockups">
+            <button type="button" data-view="recent">Recent</button>
+            <button type="button" data-view="group">Group</button>
+          </div>
+        </div>
+        <div class="tool-row">
+          <span class="tool-label">Open in</span>
+          <div class="seg" id="mode" role="group" aria-label="Open mode">
+            <button type="button" data-mode="panel">Side panel</button>
+            <button type="button" data-mode="tab">New tab</button>
+          </div>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+    </aside>
     <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the list"></div>
     <main class="preview">
       <div class="preview-bar">
@@ -147,6 +167,7 @@
       const catEl = document.getElementById("cat");
       const layout = document.getElementById("layout");
       const modeSeg = document.getElementById("mode");
+      const viewSeg = document.getElementById("view");
       const resizer = document.getElementById("resizer");
       const frame = document.getElementById("frame");
       const ptitle = document.getElementById("ptitle");
@@ -177,18 +198,33 @@
       }
 
       let mode = getPref("mockups_mode") || "panel";
+      let view = getPref("mockups_view") || "recent";
       let activePath = null;
       const collapsed = new Set((getPref("mockups_collapsed") || "").split(",").filter(Boolean));
 
-      function setMode(m) {
-        mode = m;
-        layout.setAttribute("data-mode", m);
-        setPref("mockups_mode", m);
-        [...modeSeg.children].forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
+      function setMode(nextMode) {
+        mode = nextMode;
+        layout.setAttribute("data-mode", nextMode);
+        setPref("mockups_mode", nextMode);
+        [...modeSeg.children].forEach((button) => button.classList.toggle("on", button.dataset.mode === nextMode));
       }
-      modeSeg.addEventListener("click", (e) => {
-        const b = e.target.closest("button");
-        if (b) setMode(b.dataset.mode);
+
+      modeSeg.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (button) setMode(button.dataset.mode);
+      });
+
+      function setView(nextView) {
+        view = nextView === "group" ? "group" : "recent";
+        layout.setAttribute("data-view", view);
+        setPref("mockups_view", view);
+        [...viewSeg.children].forEach((button) => button.classList.toggle("on", button.dataset.view === view));
+        render();
+      }
+
+      viewSeg.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (button) setView(button.dataset.view);
       });
 
       function preview(m) {
@@ -238,13 +274,13 @@
 
         const q = qEl.value.trim().toLowerCase();
         const cat = catEl.value;
-        const filtered = all.filter((m) => {
-          if (cat && (m.group || "ungrouped") !== cat) return false;
+        const filtered = all.filter((mockup) => {
+          if (cat && (mockup.group || "ungrouped") !== cat) return false;
           if (!q) return true;
           return (
-            (m.title || "").toLowerCase().includes(q) ||
-            (m.group || "").toLowerCase().includes(q) ||
-            (m.prompt || "").toLowerCase().includes(q)
+            (mockup.title || "").toLowerCase().includes(q) ||
+            (mockup.group || "").toLowerCase().includes(q) ||
+            (mockup.prompt || "").toLowerCase().includes(q)
           );
         });
 
@@ -254,55 +290,86 @@
           return;
         }
 
-        const byGroup = new Map();
-        for (const m of filtered) {
-          const k = m.group || "ungrouped";
-          if (!byGroup.has(k)) byGroup.set(k, []);
-          byGroup.get(k).push(m);
+        function createCard(mockup) {
+          const anchor = document.createElement("a");
+          anchor.className = "card";
+          anchor.href = mockup.path;
+          anchor.target = "_blank";
+          anchor.rel = "noopener";
+          anchor.dataset.path = mockup.path;
+          if (mockup.path === activePath) anchor.classList.add("active");
+          const date = mockup.createdAt || "";
+          const conceptCount = mockup.concepts ? mockup.concepts + " concepts" : "";
+          anchor.innerHTML =
+            '<span class="num">' + (mockup.id || mockup.n) + "</span>" +
+            '<span class="meta"><span class="title">' + highlight(mockup.title || mockup.path, q) + "</span>" +
+            (mockup.prompt ? '<span class="sub">' + esc(mockup.prompt) + "</span>" : "") +
+            "</span>" +
+            '<span class="badge">' + [conceptCount, date].filter(Boolean).join(" · ") + "</span>";
+          anchor.addEventListener("click", (event) => {
+            const previewVisible = mode === "panel" && frame.offsetParent !== null;
+            if (previewVisible) {
+              event.preventDefault();
+              preview(mockup);
+            }
+          });
+          return anchor;
         }
 
-        for (const [g, items] of byGroup) {
-          const sec = document.createElement("section");
-          sec.className = "group";
-          sec.dataset.group = g;
-          // While searching, force-expand so matches are never hidden in a collapsed group.
-          if (!q && collapsed.has(g)) sec.classList.add("collapsed");
+        function dateLabel(value) {
+          if (!value) return "Unknown date";
+          const parsed = new Date(value + "T00:00:00");
+          if (Number.isNaN(parsed.getTime())) return value;
+          return parsed.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+        }
 
-          const h = document.createElement("button");
-          h.type = "button";
-          h.className = "group-h";
-          h.innerHTML = '<span class="chev">▾</span><span>' + esc(g.replace(/-/g, " ")) + '</span><span class="gcount">' + items.length + "</span>";
-          sec.appendChild(h);
+        if (view === "recent") {
+          const byDay = new Map();
+          for (const mockup of filtered) {
+            const key = mockup.createdAt || "unknown";
+            if (!byDay.has(key)) byDay.set(key, []);
+            byDay.get(key).push(mockup);
+          }
+          for (const [day, items] of byDay) {
+            const section = document.createElement("section");
+            section.className = "day";
+            const heading = document.createElement("div");
+            heading.className = "day-h";
+            heading.innerHTML = "<span>" + esc(dateLabel(day === "unknown" ? "" : day)) + '</span><span class="gcount">' + items.length + "</span>";
+            section.appendChild(heading);
+            const box = document.createElement("div");
+            for (const mockup of items) box.appendChild(createCard(mockup));
+            section.appendChild(box);
+            listEl.appendChild(section);
+          }
+          return;
+        }
+
+        const byGroup = new Map();
+        for (const mockup of filtered) {
+          const key = mockup.group || "ungrouped";
+          if (!byGroup.has(key)) byGroup.set(key, []);
+          byGroup.get(key).push(mockup);
+        }
+
+        for (const groupName of [...byGroup.keys()].sort()) {
+          const items = byGroup.get(groupName);
+          const section = document.createElement("section");
+          section.className = "group";
+          section.dataset.group = groupName;
+          if (!q && collapsed.has(groupName)) section.classList.add("collapsed");
+
+          const heading = document.createElement("button");
+          heading.type = "button";
+          heading.className = "group-h";
+          heading.innerHTML = '<span class="chev">▾</span><span>' + esc(groupName.replace(/-/g, " ")) + '</span><span class="gcount">' + items.length + "</span>";
+          section.appendChild(heading);
 
           const box = document.createElement("div");
           box.className = "group-items";
-          for (const m of items) {
-            const a = document.createElement("a");
-            a.className = "card";
-            a.href = m.path;
-            a.target = "_blank";
-            a.rel = "noopener";
-            a.dataset.path = m.path;
-            if (m.path === activePath) a.classList.add("active");
-            const date = m.createdAt || "";
-            const c = m.concepts ? m.concepts + " concepts" : "";
-            a.innerHTML =
-              '<span class="num">' + (m.id || m.n) + "</span>" +
-              '<span class="meta"><span class="title">' + highlight(m.title || m.path, q) + "</span>" +
-              (m.prompt ? '<span class="sub">' + esc(m.prompt) + "</span>" : "") +
-              "</span>" +
-              '<span class="badge">' + [c, date].filter(Boolean).join(" · ") + "</span>";
-            a.addEventListener("click", (e) => {
-              const previewVisible = mode === "panel" && frame.offsetParent !== null;
-              if (previewVisible) {
-                e.preventDefault();
-                preview(m);
-              }
-            });
-            box.appendChild(a);
-          }
-          sec.appendChild(box);
-          listEl.appendChild(sec);
+          for (const mockup of items) box.appendChild(createCard(mockup));
+          section.appendChild(box);
+          listEl.appendChild(section);
         }
       }
 
@@ -374,6 +441,7 @@
 
       qEl.addEventListener("input", render);
       catEl.addEventListener("change", render);
+      setView(view);
       setMode(mode);
       render();
       fitSidebar();
