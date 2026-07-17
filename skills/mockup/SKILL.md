@@ -7,6 +7,29 @@ description: Create HTML mockups for ideas, features, or component redesigns. Us
 
 Turn an idea or a "redesign this component" request into a set of visual concepts the user can open in a browser and pick from — **10 by default, or however many the user asks for**. Do this whenever the user asks for mockups/concepts/options or runs `/mockups`.
 
+## How users invoke it
+
+Users run it with any extra instructions right after the command (the chevrons are a placeholder):
+
+```
+/mockup <specify any instructions here>
+```
+
+Everything after the command is free-form context — what to design/redesign, plus optional count, creativity, motion, and reference hints. Users may also just ask in prose ("give me mockups for …"). Recognize requests like:
+
+- `/mockup redesign the pull request detail page`
+- `/mockup change the modal design — make it feel lighter and less cramped`
+- `/mockup restyle our primary and secondary buttons`
+- `/mockup a new empty state for the dashboard when there's no data yet`
+- `/mockup redesign the settings page — give me 20 concepts`
+- `/mockup the pricing hero section, creativity 9, with motion`
+- `/mockup a mobile bottom navigation bar for the app`
+- `/mockup loading + skeleton treatment for the reports table`
+- `/mockup rework the sign-in screen — reference: none, go wild`
+- `/mockup notification toast + banner styles, keep it strictly on-brand, no motion`
+
+Honor any count / creativity / motion / reference hints already in the request, ask about the rest (see scope round below), and let the user skip with "just generate".
+
 ## Hard rules — never skip
 
 1. **Concept count: 10 by default; honor a requested number.** If the user asks for a specific amount ("20 mockups", "give me 30", "at least 15"), produce **exactly that many** (or more if they say "at least N") — that number replaces the default. Otherwise produce 10. Never fewer than 10 unless the user explicitly asks for fewer. Every concept must be a *genuinely different* direction — different layout, structure, and idiom, not palette or copy swaps of one idea. Record the real count in the `concepts` field of the `manifest.js` entry.

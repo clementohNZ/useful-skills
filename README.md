@@ -45,6 +45,33 @@ cp -R skills/mockup /path/to/your/project/.claude/skills/mockup
 | --- | --- | --- |
 | **mockup** | `/mockup` (or `/mockups`), or ask for "mockups / design concepts" | Generates HTML mockups for an idea or a component redesign: **10 distinct concepts by default (or however many you ask for)** in a **single self-contained HTML file**, all stacked on one scrollable page with anchor-nav. Saves everything under a root `mock-ups/` folder (grouped subfolders, zero-padded 6-digit generation-order prefixes) and maintains a searchable `mock-ups/mockups.html` index with side-panel preview + new-tab modes. Respects the project's design system (`DESIGN.md` / theme tokens) so concepts look like the real product. |
 
+## Using the mockup skill
+
+Invoke it and put any extra instructions right after the command — the chevrons are just a placeholder:
+
+```
+/mockup <specify any instructions here>
+```
+
+Everything after `/mockup` is free-form context: **what** to design or redesign, plus optional **count**, **creativity** (1–10), **motion**, and **reference** hints. You don't have to use the slash command — you can just say *"give me mockups for …"*. The skill first asks a few quick scoping questions (including a 1–10 creativity gauge); answer what you like, or say **"just generate"** to skip straight to the mockups.
+
+**Examples**
+
+```
+/mockup redesign the pull request detail page
+/mockup change the modal design — make it feel lighter and less cramped
+/mockup restyle our primary and secondary buttons
+/mockup a new empty state for the dashboard when there's no data yet
+/mockup redesign the settings page — give me 20 concepts
+/mockup the pricing hero section, creativity 9, with motion
+/mockup a mobile bottom navigation bar for the app
+/mockup loading + skeleton treatment for the reports table
+/mockup rework the sign-in screen — reference: none, go wild
+/mockup notification toast + banner styles, keep it strictly on-brand, no motion
+```
+
+On first use it also asks two preferences it remembers in `mock-ups/config.yaml` — **motion** (animations on/off) and **reference mode** (`design-md` · `design-md+repo` · `none`). Change them any time and it updates the file. Review your mockups in `mock-ups/mockups.html`.
+
 ## Repository layout
 
 ```
