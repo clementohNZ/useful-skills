@@ -48,6 +48,8 @@ Render **every concept stacked on a single scrollable page** — do NOT hide con
 - Renders every mockup grouped by concept subfolder, ordered by the global number, each row showing its title/date/concept-count.
 - Has an **open-mode toggle** (persisted): **Side panel** previews the selected mockup in an iframe on the right (master–detail — browse without leaving the index), and **New tab** opens each mockup with `target="_blank"`.
 - Has **search** (filters by title, category, or prompt, with match highlighting) and a **category filter** dropdown.
+- The left list is a **resizable sidebar**: a drag handle between the list and the preview resizes it (width persisted to `localStorage`). By default it **auto-fits to the widest row** so concept titles never truncate.
+- When there are **no mockups yet**, it shows an **onboarding empty state** — what the skill does, how to run it (`/mockup` or just ask), an example prompt, and the `npx skills add …` install hint — so a first-time user knows how to start.
 - You almost never edit this file; you only append entries to `manifest.js`.
 
 ## `manifest.js` entry shape

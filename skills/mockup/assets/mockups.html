@@ -8,6 +8,7 @@
   :root {
     --bg: #0e0f12; --panel: #16181d; --line: #262a31;
     --fg: #e9ecf1; --dim: #9aa3af; --accent: #b8fa30;
+    --list-w: 420px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -37,12 +38,19 @@
   .seg button.on { background: var(--accent); color: #0e0f12; }
   .seg button + button { border-left: 1px solid var(--line); }
 
-  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px 1fr; }
-  .layout[data-mode="tab"] { grid-template-columns: 1fr; }
-  .layout[data-mode="tab"] .preview { display: none; }
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: var(--list-w) 6px 1fr; }
+  .layout[data-mode="tab"], .layout[data-empty="true"] { grid-template-columns: 1fr; }
+  .layout[data-mode="tab"] .preview, .layout[data-mode="tab"] .resizer,
+  .layout[data-empty="true"] .preview, .layout[data-empty="true"] .resizer { display: none; }
 
-  .list { overflow: auto; border-right: 1px solid var(--line); padding: 14px; }
-  .layout[data-mode="tab"] .list { border-right: 0; max-width: 1000px; margin: 0 auto; width: 100%; }
+  .list { overflow: auto; padding: 14px; }
+  .layout[data-mode="tab"] .list { max-width: 1000px; margin: 0 auto; width: 100%; }
+
+  /* Drag handle between list and preview. */
+  .resizer { position: relative; cursor: col-resize; }
+  .resizer::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 1px; background: var(--line); }
+  .resizer:hover::before, .resizer.dragging::before { width: 3px; background: var(--accent); }
+
   .group { margin-bottom: 18px; }
   .group h2 {
     font-family: ui-monospace, "JetBrains Mono", monospace;
@@ -62,7 +70,7 @@
   .title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sub { color: var(--dim); font-size: 11px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge { font-family: ui-monospace, monospace; font-size: 10px; color: var(--dim); border: 1px solid var(--line); padding: 2px 7px; white-space: nowrap; }
-  .empty { color: var(--dim); font-size: 14px; padding: 30px; text-align: center; border: 1px dashed var(--line); }
+  .no-match { color: var(--dim); font-size: 14px; padding: 30px; text-align: center; border: 1px dashed var(--line); }
   mark { background: var(--accent); color: #0e0f12; }
 
   .preview { min-width: 0; display: flex; flex-direction: column; background: #fff; }
@@ -73,11 +81,23 @@
   .preview-bar a[aria-disabled="true"] { opacity: .4; pointer-events: none; }
   iframe { flex: 1; border: 0; width: 100%; background: #fff; }
 
+  /* Onboarding (shown when there are no mockups yet). */
+  .onboard { max-width: 640px; margin: 6vh auto; padding: 0 24px; }
+  .onboard .ob-badge { display: inline-block; font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #0e0f12; background: var(--accent); padding: 3px 9px; }
+  .onboard h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 14px 0 8px; }
+  .onboard p { color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .onboard ol { margin: 16px 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .onboard li { font-size: 14px; line-height: 1.5; }
+  .onboard code { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); padding: 2px 6px; color: var(--fg); }
+  .ob-example { margin: 18px 0; border: 1px solid var(--line); background: var(--panel); padding: 14px 16px; }
+  .ob-example .ob-label { display: block; font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+  .ob-example code { display: block; border: 0; background: transparent; padding: 0; font-size: 14px; color: var(--accent); }
+  .ob-foot { margin-top: 20px; font-size: 12.5px; }
+
   @media (max-width: 760px) {
     .layout, .layout[data-mode="panel"] { grid-template-columns: 1fr; }
-    .layout .preview { display: none; }
+    .layout .preview, .layout .resizer { display: none; }
   }
-  code { font-family: ui-monospace, monospace; color: var(--fg); }
 </style>
 </head>
 <body>
@@ -98,6 +118,7 @@
 
   <div class="layout" id="layout" data-mode="panel">
     <aside class="list" id="list"></aside>
+    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize the list"></div>
     <main class="preview">
       <div class="preview-bar">
         <span class="pt" id="ptitle">Select a mockup to preview</span>
@@ -117,9 +138,12 @@
       const catEl = document.getElementById("cat");
       const layout = document.getElementById("layout");
       const modeSeg = document.getElementById("mode");
+      const resizer = document.getElementById("resizer");
       const frame = document.getElementById("frame");
       const ptitle = document.getElementById("ptitle");
       const openext = document.getElementById("openext");
+
+      const MIN_W = 260, MAX_W = 620;
 
       totalEl.textContent = all.length ? "· " + all.length : "";
 
@@ -165,7 +189,31 @@
         return esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
       }
 
+      function onboarding() {
+        return (
+          '<div class="onboard">' +
+          '<span class="ob-badge">/mockup</span>' +
+          "<h2>No mockups yet</h2>" +
+          "<p>This folder collects HTML mockups made by the <strong>mockup</strong> skill — 10+ distinct concepts per idea (or however many you ask for), all on one scrollable page, saved here and listed on this searchable index.</p>" +
+          "<ol>" +
+          "<li>Open your coding agent (Claude Code, Cursor, Codex, …) in this project.</li>" +
+          "<li>Run <code>/mockup</code> — or just ask for mockups — and describe what to explore or redesign.</li>" +
+          "<li>Reload this page: your mockups show up here, grouped and previewable in the side panel.</li>" +
+          "</ol>" +
+          '<div class="ob-example"><span class="ob-label">Example prompt</span><code>/mockup redesign the settings page — give me 12 concepts</code></div>' +
+          '<p class="ob-foot">Don\'t have the skill installed? <code>npx skills add clementohNZ/useful-skills --skill mockup</code></p>' +
+          "</div>"
+        );
+      }
+
       function render() {
+        if (!all.length) {
+          layout.setAttribute("data-empty", "true");
+          listEl.innerHTML = onboarding();
+          return;
+        }
+        layout.removeAttribute("data-empty");
+
         const q = qEl.value.trim().toLowerCase();
         const cat = catEl.value;
         const filtered = all.filter((m) => {
@@ -179,12 +227,8 @@
         });
 
         listEl.innerHTML = "";
-        if (!all.length) {
-          listEl.innerHTML = '<div class="empty">No mockups yet. Run <code>/mockups</code> and describe what you want to explore.</div>';
-          return;
-        }
         if (!filtered.length) {
-          listEl.innerHTML = '<div class="empty">No mockups match your search.</div>';
+          listEl.innerHTML = '<div class="no-match">No mockups match your search.</div>';
           return;
         }
 
@@ -230,12 +274,63 @@
         }
       }
 
+      // Auto-fit the sidebar to the widest row so nothing truncates by default.
+      // Respects a width the user has dragged to (persisted).
+      function fitSidebar() {
+        const stored = localStorage.getItem("mockups.listW");
+        if (stored) {
+          layout.style.setProperty("--list-w", stored);
+          return;
+        }
+        const cards = [...listEl.querySelectorAll("a.card")];
+        if (!cards.length) return;
+        let max = 0;
+        for (const card of cards) {
+          const num = card.querySelector(".num");
+          const title = card.querySelector(".title");
+          const sub = card.querySelector(".sub");
+          const badge = card.querySelector(".badge");
+          const metaText = Math.max(title ? title.scrollWidth : 0, sub ? sub.scrollWidth : 0);
+          // num + gap + meta + gap + badge + card padding + card border
+          const need = (num ? num.offsetWidth : 56) + 12 + metaText + 12 + (badge ? badge.offsetWidth : 0) + 24 + 2;
+          if (need > max) max = need;
+        }
+        // + list padding (14*2) and a small buffer
+        const w = Math.max(320, Math.min(Math.ceil(max) + 32, MAX_W));
+        layout.style.setProperty("--list-w", w + "px");
+      }
+
+      // Drag-to-resize the sidebar.
+      let dragging = false;
+      resizer.addEventListener("mousedown", (e) => {
+        dragging = true;
+        resizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+        e.preventDefault();
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+        const rect = layout.getBoundingClientRect();
+        let w = e.clientX - rect.left;
+        w = Math.max(MIN_W, Math.min(w, rect.width - 380));
+        layout.style.setProperty("--list-w", w + "px");
+      });
+      window.addEventListener("mouseup", () => {
+        if (!dragging) return;
+        dragging = false;
+        resizer.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        localStorage.setItem("mockups.listW", layout.style.getPropertyValue("--list-w").trim());
+      });
+
       qEl.addEventListener("input", render);
       catEl.addEventListener("change", render);
       setMode(mode);
       render();
+      fitSidebar();
 
-      // Auto-preview the newest mockup so the panel isn't blank on load.
       if (mode === "panel" && all.length && frame.offsetParent !== null) preview(all[0]);
     })();
   </script>
