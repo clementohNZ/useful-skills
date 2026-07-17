@@ -33,10 +33,10 @@ Copy the skill folder into your agent's skills directory:
 
 ```bash
 # Global (Claude Code)
-cp -R mockup ~/.claude/skills/mockup
+cp -R skills/mockup ~/.claude/skills/mockup
 
 # …or project-scoped
-cp -R mockup /path/to/your/project/.claude/skills/mockup
+cp -R skills/mockup /path/to/your/project/.claude/skills/mockup
 ```
 
 ## Available skills
@@ -51,15 +51,16 @@ cp -R mockup /path/to/your/project/.claude/skills/mockup
 useful-skills/
 ├── README.md
 ├── LICENSE
-└── mockup/
-    ├── SKILL.md            # skill instructions + trigger description
-    └── assets/             # templates the skill copies into a project
-        ├── mockups.html        # the mock-ups index (master–detail + search)
-        ├── manifest.js         # append-only registry the index reads
-        └── mockup-template.html# starter scaffold for a mockup file
+└── skills/
+    └── mockup/
+        ├── SKILL.md            # skill instructions + trigger description
+        └── assets/             # templates the skill copies into a project
+            ├── mockups.html        # the mock-ups index (master–detail + search)
+            ├── manifest.js         # append-only registry the index reads
+            └── mockup-template.html# starter scaffold for a mockup file
 ```
 
-Each top-level folder is one skill. Adding a skill = add a new folder with its own `SKILL.md`.
+Each folder under `skills/` is one skill. Adding a skill = add a new folder there with its own `SKILL.md`.
 
 ## Authoring notes
 
@@ -72,7 +73,7 @@ description: What it does and when to use it — this is what agents match again
 ---
 ```
 
-Write the `description` so it fires on the right requests; keep the body imperative and self-contained. See `mockup/SKILL.md` for a worked example.
+Write the `description` so it fires on the right requests; keep the body imperative and self-contained. See `skills/mockup/SKILL.md` for a worked example.
 
 ## Security
 
